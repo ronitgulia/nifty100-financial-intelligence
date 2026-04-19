@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Detail — Nifty 100</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f1117; color: #fff; font-family: 'Segoe UI', sans-serif; }
+
+        .navbar {
+            background: #1a1d2e;
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid #2d3050;
+        }
+        .navbar a { color: #4f8ef7; text-decoration: none; font-size: 14px; }
+        .navbar h1 { color: #fff; font-size: 18px; }
+
+        .company-header {
+            background: #1a1d2e;
+            padding: 32px 40px;
+            border-bottom: 1px solid #2d3050;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .company-title h2 { font-size: 28px; margin-bottom: 6px; }
+        .company-title p { color: #888; font-size: 14px; }
+        .company-links { display: flex; gap: 12px; }
+        .link-btn {
+            padding: 8px 16px;
+            border: 1px solid #2d3050;
+            border-radius: 8px;
+            color: #4f8ef7;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .link-btn:hover { background: #4f8ef7; color: #fff; }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            padding: 24px 40px;
+        }
+        .kpi-card {
+            background: #1a1d2e;
+            border: 1px solid #2d3050;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .kpi-value { font-size: 24px; font-weight: 700; color: #4f8ef7; margin-bottom: 6px; }
+        .kpi-label { font-size: 12px; color: #888; }
+
+        .health-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .EXCELLENT { background: #1a3a2a; color: #4ade80; }
+        .GOOD { background: #1a2a3a; color: #60a5fa; }
+        .AVERAGE { background: #2a2a1a; color: #fbbf24; }
+        .WEAK { background: #2a1a1a; color: #f87171; }
+        .POOR { background: #3a1a1a; color: #ef4444; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 0 40px 24px;
+        }
+        .chart-card {
+            background: #1a1d2e;
+            border: 1px solid #2d3050;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            padding: 0 40px 24px;
+        }
+        .score-card {
+            background: #1a1d2e;
+            border: 1px solid #2d3050;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .score-name { font-size: 13px; color: #888; margin-bottom: 8px; }
+        .score-value { font-size: 28px; font-weight: 700; color: #4f8ef7; margin-bottom: 8px; }
+        .score-bar { height: 6px; background: #2d3050; border-radius: 3px; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #4f8ef7, #7c3aed); }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 0 40px 24px;
+        }
+        .section-card {
+            background: #1a1d2e;
+            border: 1px solid #2d3050;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .section-card h3 { font-size: 13px; color: #888; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .pro-item, .con-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .pro-dot { color: #4ade80; font-size: 16px; margin-top: 1px; }
+        .con-dot { color: #f87171; font-size: 16px; margin-top: 1px; }
+
+        .about-section {
+            background: #1a1d2e;
+            border: 1px solid #2d3050;
+            border-radius: 12px;
+            margin: 0 40px 40px;
+            padding: 24px;
+        }
+        .about-section h3 { font-size: 13px; color: #888; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .about-section p { font-size: 14px; line-height: 1.7; color: #ccc; }
+
+        .cashflow-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .cf-card {
+            background: #0f1117;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+        }
+        .cf-value { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+        .cf-label { font-size: 11px; color: #888; }
+        .positive { color: #4ade80; }
+        .negative { color: #f87171; }
+
+        .loading { text-align: center; padding: 80px; color: #888; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/">← Back</a>
+    <h1 id="nav-title">Loading...</h1>
+</nav>
+
+<div id="content">
+    <div class="loading">Loading company data...</div>
+</div>
+
+<script>
+    const symbol = "{{ symbol }}";
+
+    async function loadCompany() {
+        const [companyRes, plRes, mlRes, cfRes, bsRes, pcRes] = await Promise.all([
+            fetch(`/api/companies/${symbol}/`),
+            fetch(`/api/companies/${symbol}/profit-loss/`),
+            fetch(`/api/companies/${symbol}/ml-score/`),
+            fetch(`/api/companies/${symbol}/cash-flow/`),
+            fetch(`/api/companies/${symbol}/balance-sheet/`),
+            fetch(`/api/companies/${symbol}/pros-cons/`)
+        ]);
+
+        const company = await companyRes.json();
+        const pl = await plRes.json();
+        const ml = await mlRes.json();
+        const cf = await cfRes.json();
+        const bs = await bsRes.json();
+        const pc = await pcRes.json();
+
+        document.getElementById('nav-title').textContent = company.company_name;
+        document.title = `${company.company_name} — Nifty 100`;
+
+        const latest = pl[0] || {};
+        const latestCf = cf[0] || {};
+        const latestBs = bs[0] || {};
+
+        const pros = pc.filter ? pc.filter(p => p.is_pro) : [];
+        const cons = pc.filter ? pc.filter(p => !p.is_pro) : [];
+
+        const content = document.getElementById('content');
+
+        content.innerHTML = `
+            <div class="company-header">
+                <div class="company-title">
+                    <h2>${company.company_name}</h2>
+                    <p>${company.sector} &nbsp;|&nbsp; ${symbol}</p>
+                </div>
+                <div class="company-links">
+                    ${company.nse_profile ? `<a href="${company.nse_profile}" target="_blank" class="link-btn">NSE</a>` : ''}
+                    ${company.bse_profile ? `<a href="${company.bse_profile}" target="_blank" class="link-btn">BSE</a>` : ''}
+                    ${company.website ? `<a href="${company.website}" target="_blank" class="link-btn">Website</a>` : ''}
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-value">${latest.sales ? (latest.sales/100).toFixed(0) + ' Cr' : '--'}</div>
+                    <div class="kpi-label">Revenue</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${latest.net_profit ? (latest.net_profit/100).toFixed(0) + ' Cr' : '--'}</div>
+                    <div class="kpi-label">Net Profit</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${latest.eps ? latest.eps.toFixed(1) : '--'}</div>
+                    <div class="kpi-label">EPS</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${latest.opm_percentage ? latest.opm_percentage.toFixed(1) + '%' : '--'}</div>
+                    <div class="kpi-label">OPM %</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">
+                        <span class="health-badge ${ml.health_label}">${ml.health_label || '--'}</span>
+                    </div>
+                    <div class="kpi-label">Health Label</div>
+                </div>
+            </div>
+
+            <div class="scores-grid">
+                <div class="score-card">
+                    <div class="score-name">Overall Score</div>
+                    <div class="score-value">${ml.overall_score ? ml.overall_score.toFixed(1) : '--'}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${ml.overall_score || 0}%"></div></div>
+                </div>
+                <div class="score-card">
+                    <div class="score-name">Profitability</div>
+                    <div class="score-value">${ml.profitability_score ? ml.profitability_score.toFixed(1) : '--'}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${ml.profitability_score || 0}%"></div></div>
+                </div>
+                <div class="score-card">
+                    <div class="score-name">Leverage</div>
+                    <div class="score-value">${ml.leverage_score ? ml.leverage_score.toFixed(1) : '--'}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${ml.leverage_score || 0}%"></div></div>
+                </div>
+                <div class="score-card">
+                    <div class="score-name">Cash Flow</div>
+                    <div class="score-value">${ml.cashflow_score ? ml.cashflow_score.toFixed(1) : '--'}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${ml.cashflow_score || 0}%"></div></div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Sales Trend</div>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Net Profit Trend</div>
+                    <canvas id="profitChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bottom-grid">
+                <div class="section-card">
+                    <h3>Cash Flow Summary</h3>
+                    <div class="cashflow-grid">
+                        <div class="cf-card">
+                            <div class="cf-value ${latestCf.operating_activity >= 0 ? 'positive' : 'negative'}">
+                                ${latestCf.operating_activity ? latestCf.operating_activity.toFixed(0) : '--'}
+                            </div>
+                            <div class="cf-label">Operating</div>
+                        </div>
+                        <div class="cf-card">
+                            <div class="cf-value ${latestCf.investing_activity >= 0 ? 'positive' : 'negative'}">
+                                ${latestCf.investing_activity ? latestCf.investing_activity.toFixed(0) : '--'}
+                            </div>
+                            <div class="cf-label">Investing</div>
+                        </div>
+                        <div class="cf-card">
+                            <div class="cf-value ${latestCf.free_cash_flow >= 0 ? 'positive' : 'negative'}">
+                                ${latestCf.free_cash_flow ? latestCf.free_cash_flow.toFixed(0) : '--'}
+                            </div>
+                            <div class="cf-label">Free Cash Flow</div>
+                        </div>
+                    </div>
+                    <canvas id="cfChart" height="150"></canvas>
+                </div>
+
+                <div class="section-card">
+                    <h3>Balance Sheet Snapshot</h3>
+                    <div class="cashflow-grid">
+                        <div class="cf-card">
+                            <div class="cf-value positive">${latestBs.total_assets ? (latestBs.total_assets/100).toFixed(0) + ' Cr' : '--'}</div>
+                            <div class="cf-label">Total Assets</div>
+                        </div>
+                        <div class="cf-card">
+                            <div class="cf-value negative">${latestBs.borrowings ? (latestBs.borrowings/100).toFixed(0) + ' Cr' : '--'}</div>
+                            <div class="cf-label">Borrowings</div>
+                        </div>
+                        <div class="cf-card">
+                            <div class="cf-value ${latestBs.debt_to_equity <= 1 ? 'positive' : 'negative'}">
+                                ${latestBs.debt_to_equity ? latestBs.debt_to_equity.toFixed(2) : '--'}
+                            </div>
+                            <div class="cf-label">Debt/Equity</div>
+                        </div>
+                    </div>
+                    <canvas id="bsChart" height="150"></canvas>
+                </div>
+            </div>
+
+            ${pros.length > 0 || cons.length > 0 ? `
+            <div class="bottom-grid" style="margin-bottom: 24px;">
+                <div class="section-card">
+                    <h3>Pros</h3>
+                    ${pros.map(p => `
+                        <div class="pro-item">
+                            <span class="pro-dot">+</span>
+                            <span>${p.text}</span>
+                        </div>`).join('')}
+                </div>
+                <div class="section-card">
+                    <h3>Cons</h3>
+                    ${cons.map(c => `
+                        <div class="con-item">
+                            <span class="con-dot">−</span>
+                            <span>${c.text}</span>
+                        </div>`).join('')}
+                </div>
+            </div>` : ''}
+
+            <div class="about-section">
+                <h3>About</h3>
+                <p>${company.about_company || 'No description available.'}</p>
+            </div>
+        `;
+
+        renderCharts(pl, cf, bs);
+    }
+
+    function renderCharts(pl, cf, bs) {
+        const sorted = pl.slice().reverse();
+        const labels = sorted.map(d => d.year);
+        const sales = sorted.map(d => d.sales || 0);
+        const profit = sorted.map(d => d.net_profit || 0);
+
+        new Chart(document.getElementById('salesChart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Sales',
+                    data: sales,
+                    borderColor: '#4f8ef7',
+                    backgroundColor: 'rgba(79,142,247,0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#888', maxTicksLimit: 6 }, grid: { color: '#2d3050' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#2d3050' } }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('profitChart'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Net Profit',
+                    data: profit,
+                    backgroundColor: profit.map(v => v >= 0 ? 'rgba(74,222,128,0.7)' : 'rgba(248,113,113,0.7)'),
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#888', maxTicksLimit: 6 }, grid: { color: '#2d3050' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#2d3050' } }
+                }
+            }
+        });
+
+        const cfSorted = cf.slice().reverse();
+        new Chart(document.getElementById('cfChart'), {
+            type: 'bar',
+            data: {
+                labels: cfSorted.map(d => d.year),
+                datasets: [
+                    { label: 'Operating', data: cfSorted.map(d => d.operating_activity || 0), backgroundColor: 'rgba(79,142,247,0.7)' },
+                    { label: 'Free CF', data: cfSorted.map(d => d.free_cash_flow || 0), backgroundColor: 'rgba(74,222,128,0.7)' }
+                ]
+            },
+            options: {
+                plugins: { legend: { labels: { color: '#888', boxWidth: 12 } } },
+                scales: {
+                    x: { ticks: { color: '#888', maxTicksLimit: 6 }, grid: { color: '#2d3050' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#2d3050' } }
+                }
+            }
+        });
+
+        const bsSorted = bs.slice().reverse();
+        new Chart(document.getElementById('bsChart'), {
+            type: 'line',
+            data: {
+                labels: bsSorted.map(d => d.year),
+                datasets: [
+                    { label: 'Total Assets', data: bsSorted.map(d => d.total_assets || 0), borderColor: '#4f8ef7', tension: 0.4 },
+                    { label: 'Borrowings', data: bsSorted.map(d => d.borrowings || 0), borderColor: '#f87171', tension: 0.4 }
+                ]
+            },
+            options: {
+                plugins: { legend: { labels: { color: '#888', boxWidth: 12 } } },
+                scales: {
+                    x: { ticks: { color: '#888', maxTicksLimit: 6 }, grid: { color: '#2d3050' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#2d3050' } }
+                }
+            }
+        });
+    }
+
+    loadCompany();
+</script>
+</body>
+</html>
