@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Top bar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0">Nifty 100 Screener</h2>
+        <span class="text-muted">Financial health analysis of India's top listed companies</span>
+    </div>
+    <div class="d-flex gap-2">
+        <div class="stat-card text-center px-3 py-2">
+            <div class="stat-number">{{ companies|length }}</div>
+            <div class="stat-label">Companies</div>
+        </div>
+        <div class="stat-card text-center px-3 py-2">
+            <div class="stat-number">12</div>
+            <div class="stat-label">Years Data</div>
+        </div>
+        <div class="stat-card text-center px-3 py-2">
+            <div class="stat-number">21</div>
+            <div class="stat-label">Sectors</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">Health Distribution</div>
+            <div class="card-body" style="height:200px">
+                <canvas id="healthChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">Sector Breakdown</div>
+            <div class="card-body" style="height:200px">
+                <canvas id="sectorChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">Score Distribution</div>
+            <div class="card-body" style="height:200px">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <input type="text" id="searchInput" class="search-box"
+                       placeholder="🔍  Search company or symbol...">
+            </div>
+            <div class="col-md-3">
+                <select id="labelFilter" class="search-box">
+                    <option value="">All Health Labels</option>
+                    <option value="EXCELLENT">Excellent</option>
+                    <option value="GOOD">Good</option>
+                    <option value="AVERAGE">Average</option>
+                    <option value="WEAK">Weak</option>
+                    <option value="POOR">Poor</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="sectorFilter" class="search-box">
+                    <option value="">All Sectors</option>
+                    {% for c in companies %}
+                    <option value="{{ c.sector }}">{{ c.sector }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1 text-end">
+                <span class="text-muted" id="countDisplay"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover" id="companiesTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Company</th>
+                        <th>Sector</th>
+                        <th>Score</th>
+                        <th>Label</th>
+                        <th>Book Value</th>
+                        <th>ROCE %</th>
+                        <th>ROE %</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in companies %}
+                    <tr data-label="{{ c.health_label }}"
+                        data-sector="{{ c.sector }}"
+                        data-score="{{ c.overall_score }}"
+                        onclick="window.location='/company/{{ c.symbol }}/'"
+                        style="cursor:pointer">
+                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="company-link fw-500">{{ c.company_name }}</div>
+                            <code>{{ c.symbol }}</code>
+                        </td>
+                        <td><span class="sector-tag">{{ c.sector }}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="score-bar" style="width:60px">
+                                    <div class="score-fill"
+                                         style="width:{{ c.overall_score }}%;
+                                         background:{% if c.overall_score >= 70 %}#00b386{% elif c.overall_score >= 50 %}#f0a500{% else %}#e04f4f{% endif %}">
+                                    </div>
+                                </div>
+                                <span style="font-size:0.82rem;font-weight:600">
+                                    {{ c.overall_score|floatformat:1 }}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge-{{ c.health_label|lower }}">
+                                {{ c.health_label }}
+                            </span>
+                        </td>
+                        <td>{{ c.book_value }}</td>
+                        <td>{% if c.roce != '—' %}{{ c.roce }}%{% else %}—{% endif %}</td>
+                        <td>{% if c.roe != '—' %}{{ c.roe }}%{% else %}—{% endif %}</td>
+                        <td>
+                            <a href="/company/{{ c.symbol }}/"
+                               class="btn btn-primary btn-sm"
+                               onclick="event.stopPropagation()">View →</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const rows      = document.querySelectorAll('#companiesTable tbody tr');
+    const labelData  = {};
+    const sectorData = {};
+    const scoreData  = Array(10).fill(0);
+
+    rows.forEach(row => {
+        const label  = row.dataset.label;
+        const sector = row.dataset.sector;
+        const score  = parseFloat(row.dataset.score) || 0;
+        if (label)  labelData[label]   = (labelData[label]  || 0) + 1;
+        if (sector) sectorData[sector] = (sectorData[sector]|| 0) + 1;
+        const bin = Math.min(Math.floor(score / 10), 9);
+        scoreData[bin]++;
+    });
+
+    // Health Chart
+    new Chart(document.getElementById('healthChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(labelData),
+            datasets: [{
+                data: Object.values(labelData),
+                backgroundColor: ['#00b386','#55d6a0','#f0a500','#e07a00','#e04f4f'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { font:{size:10}, boxWidth:10, color:'#555' }
+                }
+            }
+        }
+    });
+
+    // Sector Chart
+    const topSectors = Object.entries(sectorData).sort((a,b)=>b[1]-a[1]).slice(0,7);
+    new Chart(document.getElementById('sectorChart'), {
+        type: 'bar',
+        data: {
+            labels: topSectors.map(s=>s[0]),
+            datasets: [{
+                data: topSectors.map(s=>s[1]),
+                backgroundColor: '#ff6b35',
+                borderRadius: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks:{font:{size:9},color:'#888'}, grid:{display:false} },
+                y: { ticks:{font:{size:9},color:'#888'}, grid:{color:'#f0f2f5'} }
+            }
+        }
+    });
+
+    // Score Chart
+    new Chart(document.getElementById('scoreChart'), {
+        type: 'bar',
+        data: {
+            labels: ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'],
+            datasets: [{
+                data: scoreData,
+                backgroundColor: scoreData.map((_,i) =>
+                    i >= 7 ? '#00b386' : i >= 5 ? '#f0a500' : '#e04f4f'),
+                borderRadius: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks:{font:{size:8},color:'#888'}, grid:{display:false} },
+                y: { ticks:{font:{size:9},color:'#888'}, grid:{color:'#f0f2f5'} }
+            }
+        }
+    });
+
+    // Filters
+    function filterTable() {
+        const search  = document.getElementById('searchInput').value.toLowerCase();
+        const label   = document.getElementById('labelFilter').value;
+        const sector  = document.getElementById('sectorFilter').value;
+        let count = 0;
+        rows.forEach(row => {
+            const text      = row.innerText.toLowerCase();
+            const rowLabel  = row.dataset.label;
+            const rowSector = row.dataset.sector;
+            const show = text.includes(search) &&
+                         (!label  || rowLabel  === label) &&
+                         (!sector || rowSector === sector);
+            row.style.display = show ? '' : 'none';
+            if (show) count++;
+        });
+        document.getElementById('countDisplay').textContent = count + ' results';
+    }
+
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('labelFilter').addEventListener('change', filterTable);
+    document.getElementById('sectorFilter').addEventListener('change', filterTable);
+    document.getElementById('countDisplay').textContent = rows.length + ' results';
+</script>
+{% endblock %}

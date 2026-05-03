@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="fw-bold" style="color:#4f8ef7">
+            <i class="fas fa-layer-group me-2"></i>{{ sector_name }} Sector
+        </h2>
+        <p class="text-muted">{{ companies|length }} companies in this sector</p>
+    </div>
+</div>
+
+<!-- Sector Selector -->
+<div class="card mb-4">
+    <div class="card-body">
+        <label class="text-muted mb-2">Jump to Sector:</label>
+        <div class="d-flex flex-wrap gap-2">
+            {% for s in sectors %}
+            <a href="/sector/{{ s.sector_name }}"
+               class="btn btn-sm {% if s.sector_name == sector_name %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                {{ s.sector_name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Companies Table -->
+<div class="card">
+    <div class="card-header"><h5 class="mb-0">Companies</h5></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Company</th>
+                        <th>Health Score</th>
+                        <th>Label</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in companies %}
+                    <tr>
+                        <td><code style="color:#4f8ef7">{{ c.symbol }}</code></td>
+                        <td>{{ c.company_name }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:6px; background:#2d3147">
+                                    <div class="progress-bar"
+                                         style="width:{{ c.overall_score }}%;
+                                         background:{% if c.overall_score >= 70 %}#00c853{% elif c.overall_score >= 50 %}#ffd600{% else %}#d50000{% endif %}">
+                                    </div>
+                                </div>
+                                <span>{{ c.overall_score|floatformat:1 }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ c.health_label|lower }}">
+                                {{ c.health_label }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/company/{{ c.symbol }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

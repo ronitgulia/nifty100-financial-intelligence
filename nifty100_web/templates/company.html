@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Company Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="fw-bold" style="color:#4f8ef7">
+            {{ company.company_name }}
+        </h2>
+        <span class="sector-badge me-2">{{ company.sector }}</span>
+        <code style="color:#a0a8c0">{{ company.symbol }}</code>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="/" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<!-- Score Cards -->
+<div class="row mb-4 g-3">
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-number">
+                {% if score %}{{ score.overall_score|floatformat:1 }}{% else %}N/A{% endif %}
+            </div>
+            <div class="text-muted">Health Score</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-number" style="color:#00c853">
+                {% if score %}{{ score.health_label }}{% else %}N/A{% endif %}
+            </div>
+            <div class="text-muted">Health Label</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-number" style="color:#ffd600">
+                {{ company.roce_percentage|floatformat:1 }}%
+            </div>
+            <div class="text-muted">ROCE %</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-number" style="color:#4f8ef7">
+                {{ company.roe_percentage|floatformat:1 }}%
+            </div>
+            <div class="text-muted">ROE %</div>
+        </div>
+    </div>
+</div>
+
+<!-- Score Breakdown -->
+{% if score %}
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">Score Breakdown</h5></div>
+    <div class="card-body">
+        <div class="row g-3">
+            {% for label, val in score_items %}
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>{{ label }}</span><span>{{ val|floatformat:1 }}</span>
+                </div>
+                <div class="progress" style="height:8px; background:#2d3147">
+                    <div class="progress-bar" style="width:{{ val }}%; background:#4f8ef7"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Revenue vs Profit Chart -->
+<div class="row mb-4 g-3">
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">Revenue vs Net Profit</h5></div>
+            <div class="card-body">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">CAGR Analysis</h5></div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead><tr><th>Period</th><th>Sales</th><th>Profit</th></tr></thead>
+                    <tbody>
+                        {% for a in analysis %}
+                        <tr>
+                            <td>{{ a.period }}</td>
+                            <td>{{ a.sales_cagr|floatformat:1 }}%</td>
+                            <td>{{ a.profit_cagr|floatformat:1 }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- P&L Table -->
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">Profit & Loss</h5></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Year</th><th>Sales</th><th>Net Profit</th>
+                        <th>OPM%</th><th>EPS</th><th>Dividend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pl_data %}
+                    <tr>
+                        <td>{{ p.year }}</td>
+                        <td>₹{{ p.sales|floatformat:0 }} Cr</td>
+                        <td style="color:{% if p.net_profit > 0 %}#00c853{% else %}#d50000{% endif %}">
+                            ₹{{ p.net_profit|floatformat:0 }} Cr
+                        </td>
+                        <td>{{ p.opm_pct|floatformat:1 }}%</td>
+                        <td>{{ p.eps|floatformat:2 }}</td>
+                        <td>{{ p.dividend_payout|floatformat:1 }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pros & Cons -->
+<div class="row mb-4 g-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header" style="color:#00c853">
+                <h5 class="mb-0"><i class="fas fa-thumbs-up me-2"></i>Pros</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    {% for p in pros %}
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle me-2" style="color:#00c853"></i>{{ p.text }}
+                    </li>
+                    {% empty %}
+                    <li class="text-muted">No data available</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header" style="color:#d50000">
+                <h5 class="mb-0"><i class="fas fa-thumbs-down me-2"></i>Cons</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    {% for c in cons %}
+                    <li class="mb-2">
+                        <i class="fas fa-times-circle me-2" style="color:#d50000"></i>{{ c.text }}
+                    </li>
+                    {% empty %}
+                    <li class="text-muted">No data available</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const years  = [{% for p in pl_data %}"{{ p.year }}",{% endfor %}];
+    const sales  = [{% for p in pl_data %}{{ p.sales|default:0 }},{% endfor %}];
+    const profit = [{% for p in pl_data %}{{ p.net_profit|default:0 }},{% endfor %}];
+
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Sales',
+                    data: sales,
+                    backgroundColor: 'rgba(79,142,247,0.7)',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Net Profit',
+                    data: profit,
+                    backgroundColor: 'rgba(0,200,83,0.7)',
+                    borderRadius: 4,
+                    type: 'line',
+                    borderColor: '#00c853',
+                    fill: false,
+                    tension: 0.4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: '#e0e0e0' } } },
+            scales: {
+                x: { ticks: { color: '#a0a8c0' }, grid: { color: '#2d3147' } },
+                y: { ticks: { color: '#a0a8c0' }, grid: { color: '#2d3147' } }
+            }
+        }
+    });
+</script>
+{% endblock %}
